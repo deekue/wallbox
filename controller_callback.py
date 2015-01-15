@@ -32,6 +32,11 @@ post_gap_pulses = 0
 lock = Lock()
 
 def handle_gpio_interrupt(channel):
+    """handles a GPIO interrupt. updates pulse counters
+
+    :channel: GPIO pin that generated the interrupt
+    :returns: None
+    """
     global lock, IGNORE_CHANGE_BELOW, MIN_GAP_LEN, MIN_TRAIN_BOUNDARY
     global pre_gap, pre_gap_pulses, post_gap_pulses, last_change
 
@@ -60,6 +65,13 @@ def handle_gpio_interrupt(channel):
 
 
 def handle_key_combo(letter, number):
+    """play/queue a song represented by letter+number
+
+    :letter: Wallbox letter button selected
+    :number: Wallbox number button selected
+    :returns: boolean representing success
+
+    """
     # TODO add Sonos stuff here
     print "handle_key_combo: %s%d" % (letter, number)
     pass
@@ -67,9 +79,9 @@ def handle_key_combo(letter, number):
 def calculate_seeburg_track(pre, post):
     """calculates a track selection for a Seeburg Wallbox
 
-    pre: number of pulses pre-gap
-    post: number of pulses post-gap
-    returns: (letter, number)
+    :pre: number of pulses pre-gap
+    :post: number of pulses post-gap
+    :returns: (letter, number)
     """
     global SELECTION_LETTERS
 
@@ -89,19 +101,20 @@ def calculate_seeburg_track(pre, post):
 def calculate_amirowe_track(pre, post):
     """calculates a track selection for an AMi/Rowe Wallbox
 
-    pre: number of pulses pre-gap
-    post: number of pulses post-gap
-    returns: (letter, number)
+    :pre: number of pulses pre-gap
+    :post: number of pulses post-gap
+    :returns: (letter, number)
     """
     global SELECTION_LETTERS
     return (SELECTION_LETTERS[pre], post)
 
 def calculate_wurlitzer_track(pre, post):
-    """calculates a track selection for an AMi/Rowe Wallbox
+    """calculates a track selection for a Wurlitzer Wallbox
+    tested on a 5250
 
-    pre: number of pulses pre-gap
-    post: number of pulses post-gap
-    returns: (letter, number)
+    :pre: number of pulses pre-gap
+    :post: number of pulses post-gap
+    :returns: (letter, number)
     """
     global SELECTION_LETTERS
     
@@ -113,19 +126,20 @@ def calculate_wurlitzer_track(pre, post):
 
 
 def main(argv):
-    """TODO: Docstring for main.
+    """main loop. sets up GPIO pin and edge detection callbacks.
+    loops watching for pulse trains, when a pulse train has completed calculate
+    a track selection and handle it.
 
-    :argv: TODO
+    :argv: currently unused
     :returns: TODO
 
     """
     global PIN, OVERFLOW_PROTECTION_INTERVAL, MIN_TRAIN_BOUNDARY, SONOS
     global last_change, pre_gap, pre, post, pre_gap_pulses, post_gap_pulses, lock
 
-
+    # set up GPIO
     GPIO.setmode(GPIO.BOARD)  
     GPIO.setup(PIN, GPIO.IN)
-
     GPIO.add_event_detect(PIN, GPIO.RISING, callback=handle_gpio_interrupt)
 
     while True:

@@ -3,6 +3,7 @@
 # based on:
 # https://github.com/phil-lavin/raspberry-pi-seeburg-wallbox/blob/master/pi-seeburg.c
 
+import logging
 import sys
 import time
 from optparse import OptionParser
@@ -40,6 +41,8 @@ try:
 except ImportError:
     print "RPi.GPIO not available. Nothing much will happen"
 
+# set up logging
+logger = logging.getLogger('jukebox_controller')
 
 def handle_gpio_interrupt(channel):
     """handles a GPIO interrupt. updates pulse counters
@@ -48,7 +51,7 @@ def handle_gpio_interrupt(channel):
     :returns: None
     """
     global lock, IGNORE_CHANGE_BELOW, MIN_GAP_LEN, MIN_TRAIN_BOUNDARY
-    global pre_gap, pre_gap_pulses, post_gap_pulses, last_change
+    global pre_gap, pre_gap_pulses, post_gap_pulses, last_change, logger
 
     if lock.acquire(False):
         try:
@@ -71,7 +74,7 @@ def handle_gpio_interrupt(channel):
         finally:
             lock.release()
     else:
-        print "Locked.  Ignoring interrupt"
+        logger.debug("Locked.  Ignoring interrupt")
 
 
 def handle_key_combo(letter, number):
@@ -82,9 +85,9 @@ def handle_key_combo(letter, number):
     :returns: boolean representing success
 
     """
+    global logger
     # TODO add Sonos stuff here
-    print "handle_key_combo: %s%d" % (letter, number)
-    pass
+    logger.info("selection: %s%d" % (letter, number))
 
 def calculate_seeburg_track(pre, post):
     """calculates a track selection for a Seeburg Wallbox
@@ -128,7 +131,6 @@ def calculate_wurlitzer_track(pre, post):
     """
     global SELECTION_LETTERS
     
-    print "calculate_wurlitzer_track: pre %d, post %d" % (pre, post)
     letter = SELECTION_LETTERS[pre - 1]
     number = post + 1
 
@@ -154,15 +156,32 @@ def main(argv=None):
     parser.add_option("-w", "--wallbox", dest="wallbox_type",
                       default="wurlitzer",
                       help="Wallbox type (amirowe,seeburg,wurlitzer) [%default]")
+    parser.add_option("-l", "--logfile", dest="logfile",
+                      default="/tmp/jukebox_controller.log",
+                      help="file to log to [%default]")
+    parser.add_option("-d", "--debug", action="store_true", dest="debug",
+                      default=False,
+                      help="enable debug logging [%default]")
     (options, args) = parser.parse_args(args=argv)
 
     track_handler = "calculate_%s_track" % options.wallbox_type
     if hasattr(sys.modules[__name__], track_handler):
         calculate_track = getattr(sys.modules[__name__], track_handler)
     else:
-        print "unknown wallbox type: %s" % options.wallbox_type
+        sys.stderr.write("unknown wallbox type: %s" % options.wallbox_type)
         return 1
 
+    # set up logging
+    hdlr = logging.FileHandler(options.logfile)
+    formatter = logging.Formatter('%(levelname).1s%(asctime)s %(name)s: %(message)s')
+    hdlr.setFormatter(formatter)
+    logger.addHandler(hdlr) 
+    if options.debug:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+    
+    logger.info("starting main loop...")
     while True:
         now = time.time()
 
@@ -175,6 +194,7 @@ def main(argv=None):
                 post = post_gap_pulses -1
 
                 lock.acquire()
+                logger.debug("running calculate_track(%d, %d)" % (pre, post))
                 (letter, number) = calculate_track(pre, post)
                 handle_key_combo(letter, number)
             
@@ -188,7 +208,7 @@ def main(argv=None):
                 try:
                     lock.release()
                 except thread.error:
-                    print "main loop: releasing unlocked lock"
+                    logger.debug("main loop: releasing unlocked lock")
 
         # Should update time to stop diff overflowing?
         if diff > OVERFLOW_PROTECTION_INTERVAL:

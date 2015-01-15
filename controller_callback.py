@@ -4,6 +4,7 @@
 # https://github.com/phil-lavin/raspberry-pi-seeburg-wallbox/blob/master/pi-seeburg.c
 
 import RPi.GPIO as GPIO  
+import sys
 import time
 from threading import Lock
 
@@ -23,7 +24,7 @@ SELECTION_LETTERS=("A","B","C","D","E","F","G","H","J","K","L","M","N","P","Q","
 # Time of last change
 last_change = time.time()
 # Which side of "the gap" we're on
-pre_gap = 1
+pre_gap = True
 # Pulse counters
 pre_gap_pulses = 0
 post_gap_pulses = 0
@@ -44,7 +45,7 @@ def handle_gpio_interrupt(channel):
             if diff > IGNORE_CHANGE_BELOW:
                 # should switch to post gap? it's gap > gap len but less than train boundary. Only when we're doing numbers, though.
                 if pre_gap and diff > MIN_GAP_LEN and diff < MIN_TRAIN_BOUNDARY:
-                    pre_gap = 0
+                    pre_gap = False
 
                 if pre_gap:
                     pre_gap_pulses += 1
@@ -53,7 +54,7 @@ def handle_gpio_interrupt(channel):
 
             last_change = now
         finally:
-            lock.relase()
+            lock.release()
     else:
         print "Locked.  Ignoring interrupt"
 
@@ -105,8 +106,10 @@ def calculate_wurlitzer_track(pre, post):
     global SELECTION_LETTERS
     
     print "calculate_wurlitzer_track: pre %d, post %d" % (pre, post)
+    letter = SELECTION_LETTERS[pre - 1]
+    number = post + 1
 
-    return ('A', 1)
+    return (letter, number)
 
 
 def main(argv):
@@ -116,13 +119,13 @@ def main(argv):
     :returns: TODO
 
     """
-    global PIN
+    global PIN, OVERFLOW_PROTECTION_INTERVAL, MIN_TRAIN_BOUNDARY, SONOS
+    global last_change, pre_gap, pre, post, pre_gap_pulses, post_gap_pulses, lock
+
 
     GPIO.setmode(GPIO.BOARD)  
-    #GPIO.setup(PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  
     GPIO.setup(PIN, GPIO.IN)
 
-    #GPIO.add_event_detect(PIN, GPIO.RISING, callback=handle_gpio_interrupt, bouncetime=PULSE_WIDTH)  
     GPIO.add_event_detect(PIN, GPIO.RISING, callback=handle_gpio_interrupt)
 
     while True:
@@ -149,7 +152,7 @@ def main(argv):
             if pre_gap_pulses or post_gap_pulses:
                 pre_gap_pulses = 0
                 post_gap_pulses = 0
-                pre_gap = 1
+                pre_gap = True
 
             if lock.locked():
                 try:
@@ -164,6 +167,7 @@ def main(argv):
         # Waste time but not CPU whilst still allowing us to detect finished pulses
         time.sleep(0.01) # 10ms
 
-
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
                 
 

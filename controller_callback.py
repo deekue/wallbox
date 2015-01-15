@@ -3,9 +3,9 @@
 # based on:
 # https://github.com/phil-lavin/raspberry-pi-seeburg-wallbox/blob/master/pi-seeburg.c
 
-import RPi.GPIO as GPIO  
 import sys
 import time
+from optparse import OptionParser
 from threading import Lock
 
 # Which pin to watch
@@ -18,7 +18,7 @@ MIN_GAP_LEN = 0.25
 MIN_TRAIN_BOUNDARY = 0.4
 # How often to update the last change value to stop diff overflowing
 OVERFLOW_PROTECTION_INTERVAL = 60
-
+# Letters available for selection on the wallbox
 SELECTION_LETTERS=("A","B","C","D","E","F","G","H","J","K","L","M","N","P","Q","R","S","T","U","V")
 
 # Time of last change
@@ -30,6 +30,16 @@ pre_gap_pulses = 0
 post_gap_pulses = 0
 # Locked?
 lock = Lock()
+
+try:
+    # wrap this in a try/except so I can test on my laptop
+    import RPi.GPIO as GPIO  
+    GPIO.setmode(GPIO.BOARD)  
+    GPIO.setup(PIN, GPIO.IN)
+    GPIO.add_event_detect(PIN, GPIO.RISING, callback=handle_gpio_interrupt)
+except ImportError:
+    print "RPi.GPIO not available. Nothing much will happen"
+
 
 def handle_gpio_interrupt(channel):
     """handles a GPIO interrupt. updates pulse counters
@@ -125,7 +135,7 @@ def calculate_wurlitzer_track(pre, post):
     return (letter, number)
 
 
-def main(argv):
+def main(argv=None):
     """main loop. sets up GPIO pin and edge detection callbacks.
     loops watching for pulse trains, when a pulse train has completed calculate
     a track selection and handle it.
@@ -137,10 +147,21 @@ def main(argv):
     global PIN, OVERFLOW_PROTECTION_INTERVAL, MIN_TRAIN_BOUNDARY, SONOS
     global last_change, pre_gap, pre, post, pre_gap_pulses, post_gap_pulses, lock
 
-    # set up GPIO
-    GPIO.setmode(GPIO.BOARD)  
-    GPIO.setup(PIN, GPIO.IN)
-    GPIO.add_event_detect(PIN, GPIO.RISING, callback=handle_gpio_interrupt)
+    # parse args
+    if argv is None:
+      argv = sys.argv
+    parser = OptionParser()
+    parser.add_option("-w", "--wallbox", dest="wallbox_type",
+                      default="wurlitzer",
+                      help="Wallbox type (amirowe,seeburg,wurlitzer) [%default]")
+    (options, args) = parser.parse_args(args=argv)
+
+    track_handler = "calculate_%s_track" % options.wallbox_type
+    if hasattr(sys.modules[__name__], track_handler):
+        calculate_track = getattr(sys.modules[__name__], track_handler)
+    else:
+        print "unknown wallbox type: %s" % options.wallbox_type
+        return 1
 
     while True:
         now = time.time()
@@ -154,12 +175,7 @@ def main(argv):
                 post = post_gap_pulses -1
 
                 lock.acquire()
-
-                # uncomment one of these
-                # (letter, number) = calculate_amirowe_track(pre, post)
-                # (letter, number) = calculate_seeburg_track(pre, post)
-                (letter, number) = calculate_wurlitzer_track(pre, post)
-
+                (letter, number) = calculate_track(pre, post)
                 handle_key_combo(letter, number)
             
             # Reset counters

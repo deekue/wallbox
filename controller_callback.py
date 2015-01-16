@@ -7,8 +7,7 @@ import logging
 import sys
 import time
 from optparse import OptionParser
-from threading import Lock, Thread
-from Queue import Queue
+from threading import Lock
 
 # Which pin to watch
 PIN = 13
@@ -32,8 +31,6 @@ pre_gap_pulses = 0
 post_gap_pulses = 0
 # Locked?
 lock = Lock()
-# dispatch queue
-dispatch_queue = Queue()
 
 # set up logging
 logger = logging.getLogger('jukebox_controller')
@@ -70,22 +67,17 @@ def handle_gpio_interrupt(channel):
     else:
         logger.debug("Locked.  Ignoring interrupt")
 
-
-def handle_key_combo(q):
-    """worker to play/queue a song from the queue represented by letter+number
-
-    :q: queue of letter/number selections to handle
-    :returns: None
-
+def handle_key_combo(letter, number):
+    """play/queue a song represented by letter+number
+  
+    :letter: Wallbox letter button selected
+    :number: Wallbox number button selected
+    :returns: boolean representing success
+  
     """
     global logger
-    logger.debug("handle_key_combo starting...")
-    while True:
-        (letter, number) = q.get()
-        logger.info("selection: %s%d" % (letter, number))
-        # TODO add Sonos stuff here
-        q.task_done()
-
+    # TODO add Sonos stuff here
+    logger.info("selection: %s%d" % (letter, number))
 
 def calculate_seeburg_track(pre, post):
     """calculates a track selection for a Seeburg Wallbox
@@ -180,11 +172,6 @@ def main(argv=None):
     else:
         logger.setLevel(logging.INFO)
    
-    # separate thread for dispatching selections
-    worker = Thread(target=handle_key_combo, args=(dispatch_queue,))
-    worker.setDaemon(True)
-    worker.start()
-
     logger.info("starting main loop...")
     while True:
         now = time.time()
@@ -200,10 +187,7 @@ def main(argv=None):
                 lock.acquire()
                 logger.debug("running calculate_track(%d, %d)" % (pre, post))
                 (letter, number) = calculate_track(pre, post)
-                try:
-                    dispatch_queue.put_nowait((letter, number))
-                except Queue.Full:
-                    logger.info("failed to add selection %s%d to dispatch queue")
+                handle_key_combo(letter, number)
             
             # Reset counters
             if pre_gap_pulses or post_gap_pulses:

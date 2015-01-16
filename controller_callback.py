@@ -131,7 +131,8 @@ def calculate_wurlitzer_track(pre, post):
     
     letter = SELECTION_LETTERS[pre - 1]
     number = post + 1
-
+    if number > 9:
+        number = 0
     return (letter, number)
 
 

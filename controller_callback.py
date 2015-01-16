@@ -35,16 +35,6 @@ lock = Lock()
 # dispatch queue
 dispatch_queue = Queue()
 
-
-try:
-    # wrap this in a try/except so I can test on my laptop
-    import RPi.GPIO as GPIO  
-    GPIO.setmode(GPIO.BOARD)  
-    GPIO.setup(PIN, GPIO.IN)
-    GPIO.add_event_detect(PIN, GPIO.RISING, callback=handle_gpio_interrupt)
-except ImportError:
-    print "RPi.GPIO not available. Nothing much will happen"
-
 # set up logging
 logger = logging.getLogger('jukebox_controller')
 
@@ -209,7 +199,10 @@ def main(argv=None):
                 lock.acquire()
                 logger.debug("running calculate_track(%d, %d)" % (pre, post))
                 (letter, number) = calculate_track(pre, post)
-                dispatch_queue.put((letter, number))
+                try:
+                    dispatch_queue.put_nowait((letter, number))
+                except Queue.Full:
+                    logger.info("failed to add selection %s%d to dispatch queue")
             
             # Reset counters
             if pre_gap_pulses or post_gap_pulses:
@@ -231,6 +224,15 @@ def main(argv=None):
         time.sleep(0.01) # 10ms
 
 if __name__ == "__main__":
+    try:
+        # wrap this in a try/except so I can test on my laptop
+        import RPi.GPIO as GPIO  
+        GPIO.setmode(GPIO.BOARD)  
+        GPIO.setup(PIN, GPIO.IN)
+        GPIO.add_event_detect(PIN, GPIO.RISING, callback=handle_gpio_interrupt)
+    except ImportError:
+        print "RPi.GPIO not available. Nothing much will happen"
+
     sys.exit(main(sys.argv))
                 
 

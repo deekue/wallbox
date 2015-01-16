@@ -1,132 +1,223 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/python
+#
+# based on:
+# https://github.com/phil-lavin/raspberry-pi-seeburg-wallbox/blob/master/pi-seeburg.c
 
-# Copyright (C) 2013 Stephen Devlin
-
-import RPi.GPIO as GPIO
+import logging
+import sys
 import time
-import sys, httplib
+from optparse import OptionParser
+from threading import Lock
 
-#contants and literals
+# Which pin to watch
+PIN = 13
+# How much time a change must be since the last in order to count as a change
+IGNORE_CHANGE_BELOW = 0.01
+# What is the minimum time since the last pulse for a pulse to count as "after the gap"
+MIN_GAP_LEN = 0.25
+# What is the mimimum time since the last pulse for a pulse to count as a new train
+MIN_TRAIN_BOUNDARY = 0.4
+# How often to update the last change value to stop diff overflowing
+OVERFLOW_PROTECTION_INTERVAL = 60
+# Letters available for selection on the wallbox
 SELECTION_LETTERS=("A","B","C","D","E","F","G","H","J","K","L","M","N","P","Q","R","S","T","U","V")
-WALLBOX=13
 
-#>>>these constants can be changed to fit the characteristics of your wallbox
-MAXMIMUM_GAP=3
-MINIMUM_PULSE_GAP_WIDTH=0.004
-LETTER_NUMBER_GAP=0.12
+# Time of last change
+last_change = time.time()
+# Which side of "the gap" we're on
+pre_gap = True
+# Pulse counters
+pre_gap_pulses = 0
+post_gap_pulses = 0
+# Locked?
+lock = Lock()
 
-#>>> you will need to change the directory name in the SOAP message to correspond
-#>>> with the location of your jukebox music files
+# set up logging
+logger = logging.getLogger('jukebox_controller')
 
-SOAP_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
-<SOAP-ENV:Body>
-<ns1:AddURIToQueue xmlns:ns1="urn:schemas-upnp-org:service:AVTransport:1">
-              <InstanceID>0</InstanceID>
-              <EnqueuedURI>x-file-cifs://Rainbow-Media/QRecordings/jukebox/%s.mp3</EnqueuedURI>
-              <EnqueuedURIMetaData></EnqueuedURIMetaData>
-              <DesiredFirstTrackNumberEnqueued>0</DesiredFirstTrackNumberEnqueued>
-              <EnqueueAsNext>1</EnqueueAsNext>
-        </ns1:AddURIToQueue>
-</SOAP-ENV:Body>
-</SOAP-ENV:Envelope>
-"""
+def handle_gpio_interrupt(channel):
+    """handles a GPIO interrupt. updates pulse counters
 
-#set up IO port for input
+    :channel: GPIO pin that generated the interrupt
+    :returns: None
+    """
+    global lock, IGNORE_CHANGE_BELOW, MIN_GAP_LEN, MIN_TRAIN_BOUNDARY
+    global pre_gap, pre_gap_pulses, post_gap_pulses, last_change, logger
 
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(WALLBOX, GPIO.IN)
+    if lock.acquire(False):
+        try:
+            now = time.time()
 
+            diff = now - last_change
 
-#this function tests if a pulse or gap is wide enough to be registered
-#this is needed for two reasons. 1) Sometimes the wallbox will generate an errant pulse
-#which will cause errors if interpretted as a proper contact pulse 2) because of the
-#way that I have tapped the wallbox pulses, there will be short gaps inside each pulse
-#that need to be ignored
+            # filter jitter
+            if diff > IGNORE_CHANGE_BELOW:
+                # should switch to post gap? it's gap > gap len but less than train boundary. Only when we're doing numbers, though.
+                if pre_gap and diff > MIN_GAP_LEN and diff < MIN_TRAIN_BOUNDARY:
+                    pre_gap = False
 
-def state_has_changed(starting_state):
-    starting_time = time.time()
-    elapsed_time = 0
+                if pre_gap:
+                    pre_gap_pulses += 1
+                else:
+                    post_gap_pulses += 1
 
-    for i in range (200):
-        if GPIO.input(WALLBOX) != starting_state: 
-            elapsed_time = time.time() - starting_time
-#            print ("check time recorded: %.3f" %elapsed_time)
-            return False
-    return True
-        
-#this function is called as soon as the main loop determines that a train of pulses
-#has started.  It begins by counting the number pulses, then when it encounters a larger
-#gap, it starts incrementing the letters.  If your wallbox uses the opposite order
-#you will need to change this.  Also the final calculation of the track may need to be changed
-#as some boxes have additional pulses at either the start or the end of the train
-#once it encounters a gap over a pre-determined maxmimum we know that the rotator arm
-#has stopped and we calculate the track 
+            last_change = now
+        finally:
+            lock.release()
+    else:
+        logger.debug("Locked.  Ignoring interrupt")
 
-def calculate_track():
+def handle_key_combo(letter, number):
+    """play/queue a song represented by letter+number
+  
+    :letter: Wallbox letter button selected
+    :number: Wallbox number button selected
+    :returns: boolean representing success
+  
+    """
+    global logger
+    # TODO add Sonos stuff here
+    logger.info("selection: %s%d" % (letter, number))
 
-    state = True
-    count_of_number_pulses = 1 #since we are in the first pulse
-    count_of_letter_pulses = 0
-    length_of_last_gap = 0
-    first_train = True
-    time_of_last_gap = time.time()
+def calculate_seeburg_track(pre, post):
+    """calculates a track selection for a Seeburg Wallbox
 
-    while length_of_last_gap < MAXMIMUM_GAP:
-        if GPIO.input(WALLBOX) != state: 
-            
-            if state_has_changed(not state): # state has changed but check it is not anomaly
-                state = not state # I use this rather than the GPIO value just in case GPIO has changed - unlikely but possible
-                if state: #indicates we're in a new pulse
-                    length_of_last_gap = time.time() - time_of_last_gap 
-                    print ("Pulse.  Last gap: %.3f" %length_of_last_gap)
+    :pre: number of pulses pre-gap
+    :post: number of pulses post-gap
+    :returns: (letter, number)
+    """
+    global SELECTION_LETTERS
 
-                    if length_of_last_gap > LETTER_NUMBER_GAP: # indicates we're into the second train of pulses
-                        first_train = False
-
-                    if first_train:
-                        count_of_number_pulses += 1
-                    else:
-                        count_of_letter_pulses +=1
-                else: #indicates we're in a new gap
-                    time_of_last_gap = time.time()
-        else:
-            length_of_last_gap = time.time() - time_of_last_gap #update gap length and continue to poll
-
-    track = SELECTION_LETTERS[count_of_letter_pulses-1] + str((count_of_number_pulses-1))
-    print ("+++ TRACK FOUND +++ Track Selection: ", track)
-    return   track
-
-
-#this function constructs and sends the header
-
-def play_song(track):
+    # Seeburg C code
+    # letter = 'A' + (2 * post) + (pre > 10) # A plus the offset plus 1 more if pre gap pulses > 10
+    # letter += (letter > 'H') # hack for missing I
+    # number = pre % 10
+    letter_index = (2 * post)
+    if pre > 10:
+        letter_index += 1
+    if letter_index > 8: # hack for missing I
+        letter_index += 1
+    number = pre % 10
     
-        SoapMessage = SOAP_TEMPLATE%(track)
-        webservice = httplib.HTTP("192.168.1.70:1400")
-        webservice.putrequest("POST", "/MediaRenderer/AVTransport/Control")
-        webservice.putheader("Host", "192.168.1.70:1400")
-        webservice.putheader("User-Agent", "Python post")
-        webservice.putheader("Content-type", "text/xml; charset=\"UTF-8\"")
-        webservice.putheader("Content-length", "%d" % len(SoapMessage))
-        webservice.putheader("SOAPAction", "urn:schemas-upnp-org:service:AVTransport:1#AddURIToQueue")
-        webservice.endheaders()
-        webservice.send(SoapMessage)
+    return (letter, number)
+
+def calculate_amirowe_track(pre, post):
+    """calculates a track selection for an AMi/Rowe Wallbox
+
+    :pre: number of pulses pre-gap
+    :post: number of pulses post-gap
+    :returns: (letter, number)
+    """
+    global SELECTION_LETTERS
+    return (SELECTION_LETTERS[pre], post)
+
+def calculate_wurlitzer_track(pre, post):
+    """calculates a track selection for a Wurlitzer Wallbox
+    tested on a 5250
+
+    :pre: number of pulses pre-gap
+    :post: number of pulses post-gap
+    :returns: (letter, number)
+    """
+    global SELECTION_LETTERS
+    
+    letter = SELECTION_LETTERS[pre - 1]
+    number = post + 1
+    if number > 9:
+        number = 0
+    return (letter, number)
 
 
-#this is the main loop.  We poll the GPIO port until there is a pulse.
-#sometimes there can be random pulses, or a spike when the rotor arm starts to move 
-#so before trying to decode the pulse train I check that
-#the pulse is long enough to indicate a contact on the selector arm
+def main(argv=None):
+    """main loop. sets up GPIO pin and edge detection callbacks.
+    loops watching for pulse trains, when a pulse train has completed calculate
+    a track selection and handle it.
 
-while True:
-    if GPIO.input(WALLBOX):
-        if state_has_changed(True):
-            track = calculate_track()
-            play_song(track)
-        else:
-            print ("--> Pulse ignored")
+    :argv: currently unused
+    :returns: TODO
 
-      
+    """
+    global PIN, OVERFLOW_PROTECTION_INTERVAL, MIN_TRAIN_BOUNDARY, SONOS
+    global last_change, pre_gap, pre, post, pre_gap_pulses, post_gap_pulses, lock
 
+    # parse args
+    if argv is None:
+      argv = sys.argv
+    parser = OptionParser()
+    parser.add_option("-w", "--wallbox", dest="wallbox_type",
+                      default="wurlitzer",
+                      help="Wallbox type (amirowe,seeburg,wurlitzer) [%default]")
+    parser.add_option("-l", "--logfile", dest="logfile",
+                      default="/tmp/jukebox_controller.log",
+                      help="file to log to [%default]")
+    parser.add_option("-d", "--debug", action="store_true", dest="debug",
+                      default=False,
+                      help="enable debug logging [%default]")
+    (options, args) = parser.parse_args(args=argv)
+
+    track_handler = "calculate_%s_track" % options.wallbox_type
+    if hasattr(sys.modules[__name__], track_handler):
+        calculate_track = getattr(sys.modules[__name__], track_handler)
+    else:
+        sys.stderr.write("unknown wallbox type: %s" % options.wallbox_type)
+        return 1
+
+    # set up logging
+    hdlr = logging.FileHandler(options.logfile)
+    formatter = logging.Formatter('%(levelname).1s%(asctime)s %(name)s: %(message)s')
+    hdlr.setFormatter(formatter)
+    logger.addHandler(hdlr) 
+    if options.debug:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+   
+    logger.info("starting main loop...")
+    while True:
+        now = time.time()
+
+        diff = now - last_change
+
+        if diff > MIN_TRAIN_BOUNDARY:
+            if not pre_gap and pre_gap_pulses and post_gap_pulses:
+                # 0 base counts without changing the originals
+                pre = pre_gap_pulses - 1
+                post = post_gap_pulses -1
+
+                lock.acquire()
+                logger.debug("running calculate_track(%d, %d)" % (pre, post))
+                (letter, number) = calculate_track(pre, post)
+                handle_key_combo(letter, number)
+            
+            # Reset counters
+            if pre_gap_pulses or post_gap_pulses:
+                pre_gap_pulses = 0
+                post_gap_pulses = 0
+                pre_gap = True
+
+            if lock.locked():
+                try:
+                    lock.release()
+                except thread.error:
+                    logger.debug("main loop: releasing unlocked lock")
+
+        # Should update time to stop diff overflowing?
+        if diff > OVERFLOW_PROTECTION_INTERVAL:
+            last_change = time.time()
+
+        # Waste time but not CPU whilst still allowing us to detect finished pulses
+        time.sleep(0.01) # 10ms
+
+if __name__ == "__main__":
+    try:
+        # wrap this in a try/except so I can test on my laptop
+        import RPi.GPIO as GPIO  
+        GPIO.setmode(GPIO.BOARD)  
+        GPIO.setup(PIN, GPIO.IN)
+        GPIO.add_event_detect(PIN, GPIO.RISING, callback=handle_gpio_interrupt)
+    except ImportError:
+        print "RPi.GPIO not available. Nothing much will happen"
+
+    sys.exit(main(sys.argv))
+                
 

@@ -1,0 +1,58 @@
+<div ng-show="tab.isSet(1)" ng-controller="JukeboxController as jukeboxCtrl">
+  <div class="table-responsive">
+		<table class="table table-striped">
+			<thead>
+				<tr>
+					<th>Letter</th>
+					<th>Number</th>
+					<th>Artist</th>
+					<th>Title</th>
+					<th>Action</th>
+					<th>&nbsp;</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr ng-repeat="(i, track) in jukeboxCtrl.tracks track by $index">
+        <form name="trackForm_$index" novalidate>
+          <td>
+            <input ng-model="jukeboxCtrl.tracks[$index].id" name="id_$index" type="hidden" value="{{track.id}}">
+            {{track.letter}}
+            <input ng-model="jukeboxCtrl.tracks[$index].letter" name="letter_$index" type="hidden" value="{{track.letter}}">
+          </td>
+					<td>
+            {{track.number}}
+            <input ng-model="jukeboxCtrl.tracks[$index].number" name="number_$index" type="hidden" value="{{track.number}}">
+          </td>
+					<td>
+            <span ng-show="!jukeboxCtrl.isEditFormVisible($index)">{{track.artist}}</span>
+            <input ng-model="jukeboxCtrl.tracks[$index].artist" ng-show="jukeboxCtrl.isEditFormVisible($index)" name="artist_$index" type="text" value="{{track.artist}}">
+          </td>
+					<td>
+            <span ng-show="!jukeboxCtrl.isEditFormVisible($index)">{{track.title}}</span>
+            <input ng-model="jukeboxCtrl.tracks[$index].title" ng-show="jukeboxCtrl.isEditFormVisible($index)" name="title_$index" type="text" value="{{track.title}}">
+          </td>
+					<td>
+            <span ng-show="!jukeboxCtrl.isEditFormVisible($index)">{{track.action}}</span>
+            <input ng-model="jukeboxCtrl.tracks[$index].action" ng-show="jukeboxCtrl.isEditFormVisible($index)" name="action_$index" type="text" value="{{track.action}}">
+          </td>
+					<td align="right">
+						<div ng-show="!jukeboxCtrl.isEditFormVisible($index)" class="btn-group" role="group" aria-label="Tools">
+							<button ng-click="jukeboxCtrl.showEditForm($index)" type="button" class="btn btn-default">
+								<span class="glyphicon glyphicon-pencil" title="Edit" aria-hidden="true"></span>
+							</button>
+            </div>
+						<div ng-show="jukeboxCtrl.isEditFormVisible($index)" class="btn-group" role="group" aria-label="Tools">
+							<button ng-click="jukeboxCtrl.editTrack($index)" type="button" class="btn btn-default">
+								<span class="glyphicon glyphicon-ok" title="Save" aria-hidden="true"></span>
+							</button>
+							<button ng-click="jukeboxCtrl.reset($index)" type="reset" class="btn btn-default">
+								<span class="glyphicon glyphicon-remove" title="Cancel" aria-hidden="true"></span>
+							</button>
+						</div>
+					</td>
+        </form>
+				</tr>
+			</tbody>
+		</table>
+  </div>
+</div>

@@ -32,23 +32,3 @@ class JukeboxTrack(flask.views.MethodView):
         JukeboxModel.update_track(track)
         return jsonify(success=True)
         
-
-#class JukeboxAdd(flask.views.MethodView):
-#    def post(self):
-#        args = json.loads(request.data)
-#        JukeboxModel.add_item(args['item'])
-#        return jsonify({ 'success': True })
-#
-#class JukeboxRetrieve(flask.views.MethodView):
-#    def get(self, n):
-#        try:
-#            n = int(n)
-#        except ValueError:
-#            n = RETRIEVE_DEFAULT_NR
-#        if n <= 0:
-#            n = RETRIEVE_DEFAULT_NR
-#        jukeboxList = JukeboxModel.retrieve_last_N_items(n)
-#        return jsonify({
-#            'success': True,
-#            'jukeboxList': [{ 'text': item } for item in jukeboxList]
-#        })

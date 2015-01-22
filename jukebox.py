@@ -15,6 +15,12 @@
 #   - option for 'partymode'
 #     - group all speakers, take over playlist
 #
+# - actions
+#   - Sonos play_uri
+#   - Youtube via Chromecast?
+#   - Local play (hook speakers to RPi)
+#   - System command
+#
 # - webui
 #   - software
 #      - angular+bootstrap client
@@ -69,7 +75,7 @@
 
 from flask import Flask
 
-from jukeboxView import JukeboxView, JukeboxPlay, JukeboxTrack, JukeboxTracks
+from jukebox.jukeboxView import JukeboxView, JukeboxPlay, JukeboxTrack, JukeboxTracks
 
 app = Flask(__name__)
 

@@ -1,51 +1,66 @@
+// pagination code snippet from: http://plnkr.co/edit/AD1AGCYIm1dZhbuoPhxX?p=preview
+
 (function() {
-	var app = angular.module('jukebox', []);
+	var app = angular.module('jukebox', ['ui.bootstrap', 'ngResource']);
 
-  app.controller('JukeboxController', ['$log', '$http', function($log, $http){
+  app.factory('trackFactory', function($resource) {
+  });
+
+  app.controller('JukeboxController', ['$scope', '$log', '$resource', function($scope, $log, $resource){
     var jukeCtrl = this;
-    jukeCtrl.tracks = [];
-    jukeCtrl.newTrack = {};
-    jukeCtrl.origTracks = [];
-
     // TODO add support for mulitple wallboxes
+    var TrackList = $resource('/api/track/:wallbox/:letter/:number', {wallbox:1});
     $log.log("grabbing track list");
-    $http.get("/api/tracks/1").success(function(data){
-      jukeCtrl.tracks = data.trackList;
+    $scope.tracks = TrackList.query(); //TODO add error handler
+    $scope.newTrack = {};
+    $scope.origTracks = [];
+    $scope.currentPage = 1;
+    $scope.itemsPerPage = 10;
+
+    // pagination
+    $scope.tracks.$promise.then(function () {
+      $scope.totalItems = $scope.tracks.length;
+      $scope.$watch('currentPage + itemsPerPage', function() {
+        var begin = (($scope.currentPage - 1) * $scope.itemsPerPage),
+          end = begin + $scope.itemsPerPage;
+        $scope.filteredTracks = $scope.tracks.slice(begin, end);
+      });
     });
 
     this.showEditForm = function(index) {
-      if(typeof jukeCtrl.tracks[index].showEditForm == "undefined") {
-        jukeCtrl.tracks[index].showEditForm = true;
+      if(typeof $scope.tracks[index].showEditForm == "undefined") {
+        $scope.tracks[index].showEditForm = true;
       }
-      if(jukeCtrl.tracks[index].showEditForm) {
-        jukeCtrl.tracks[index].showEditForm = false;
+      if($scope.tracks[index].showEditForm) {
+        $scope.tracks[index].showEditForm = false;
       } else {
         // now displaying the form, copy the original to enable reset()
-        jukeCtrl.origTracks[index] = angular.copy(jukeCtrl.tracks[index]);
-        jukeCtrl.tracks[index].showEditForm = true;
+        $scope.origTracks[index] = angular.copy($scope.tracks[index]);
+        $scope.tracks[index].showEditForm = true;
       }
     };
 
     this.isEditFormVisible = function(index) {
-      if(typeof jukeCtrl.tracks[index].showEditForm == "undefined") {
-        jukeCtrl.tracks[index].showEditForm = false;
+      if(typeof $scope.tracks[index].showEditForm == "undefined") {
+        $scope.tracks[index].showEditForm = false;
       }
-      return jukeCtrl.tracks[index].showEditForm;
+      return $scope.tracks[index].showEditForm;
     };
 
     this.editTrack = function(index) {
-      newTrack = this.tracks[index];
-      url = "/api/track/1/" + newTrack.letter + "/" + newTrack.number;
-      $log.log("editTrack: url " + url);
-      $http.post(url, newTrack).success(function(){
+      track_letter = $scope.tracks[index].letter;
+      track_number = $scope.tracks[index].number;
+      newTrack = angular.copy($scope.tracks[index]);
+      //$scope.tracks[index].$save({letter:track_letter, number:track_number}, function(){
+      newTrack.$save({letter:track_letter, number:track_number}, function(){
         jukeCtrl.showEditForm(index);
-      }).error(function(data, status, headers, config){
-        $log.log(data, status, headers, config);
+      }, function(httpResponse){
+        $log.log(httpResponse);
       });
     };
 
     this.reset = function(index) {
-      jukeCtrl.tracks[index] = angular.copy(jukeCtrl.origTracks[index]);
+      $scope.tracks[index] = angular.copy($scope.origTracks[index]);
     };
 
   } ] );

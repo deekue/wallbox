@@ -17,10 +17,7 @@ class JukeboxPlay(flask.views.MethodView):
 class JukeboxTracks(flask.views.MethodView):
     def get(self, wallbox):
         trackList = JukeboxModel.retrieve_tracks(wallbox)
-        #return json.dumps(trackList)
-        return jsonify(
-            success=True,
-            trackList=trackList)
+        return json.dumps(trackList)
 
 class JukeboxTrack(flask.views.MethodView):
     def get(self, wallbox, letter, number):

@@ -1,5 +1,6 @@
 <div ng-show="tab.isSet(1)" ng-controller="JukeboxController as jukeboxCtrl">
   <div class="table-responsive">
+    <pagination total-items="totalItems" ng-model="currentPage" class="pagination-sm" boundary-links="true" rotate="false"></pagination>
 		<table class="table table-striped">
 			<thead>
 				<tr>
@@ -12,28 +13,28 @@
 				</tr>
 			</thead>
 			<tbody>
-				<tr ng-repeat="(i, track) in jukeboxCtrl.tracks track by $index">
+				<tr ng-repeat="(i, track) in filteredTracks track by $index">
         <form name="trackForm_$index" novalidate>
           <td>
-            <input ng-model="jukeboxCtrl.tracks[$index].id" name="id_$index" type="hidden" value="{{track.id}}">
+            <input ng-model="tracks[$index].id" name="id_$index" type="hidden" value="{{track.id}}">
             {{track.letter}}
-            <input ng-model="jukeboxCtrl.tracks[$index].letter" name="letter_$index" type="hidden" value="{{track.letter}}">
+            <input ng-model="tracks[$index].letter" name="letter_$index" type="hidden" value="{{track.letter}}">
           </td>
 					<td>
             {{track.number}}
-            <input ng-model="jukeboxCtrl.tracks[$index].number" name="number_$index" type="hidden" value="{{track.number}}">
+            <input ng-model="tracks[$index].number" name="number_$index" type="hidden" value="{{track.number}}">
           </td>
 					<td>
             <span ng-show="!jukeboxCtrl.isEditFormVisible($index)">{{track.artist}}</span>
-            <input ng-model="jukeboxCtrl.tracks[$index].artist" ng-show="jukeboxCtrl.isEditFormVisible($index)" name="artist_$index" type="text" value="{{track.artist}}">
+            <input ng-model="tracks[$index].artist" ng-show="jukeboxCtrl.isEditFormVisible($index)" name="artist_$index" type="text" value="{{track.artist}}">
           </td>
 					<td>
             <span ng-show="!jukeboxCtrl.isEditFormVisible($index)">{{track.title}}</span>
-            <input ng-model="jukeboxCtrl.tracks[$index].title" ng-show="jukeboxCtrl.isEditFormVisible($index)" name="title_$index" type="text" value="{{track.title}}">
+            <input ng-model="tracks[$index].title" ng-show="jukeboxCtrl.isEditFormVisible($index)" name="title_$index" type="text" value="{{track.title}}">
           </td>
 					<td>
             <span ng-show="!jukeboxCtrl.isEditFormVisible($index)">{{track.action}}</span>
-            <input ng-model="jukeboxCtrl.tracks[$index].action" ng-show="jukeboxCtrl.isEditFormVisible($index)" name="action_$index" type="text" value="{{track.action}}">
+            <input ng-model="tracks[$index].action" ng-show="jukeboxCtrl.isEditFormVisible($index)" name="action_$index" type="text" value="{{track.action}}">
           </td>
 					<td align="right">
 						<div ng-show="!jukeboxCtrl.isEditFormVisible($index)" class="btn-group" role="group" aria-label="Tools">

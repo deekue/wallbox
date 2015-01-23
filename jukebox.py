@@ -84,7 +84,7 @@ app.add_url_rule('/', view_func=JukeboxView.as_view('jukebox_view'),
     methods=['GET'])
 app.add_url_rule('/api/play/<int:wallbox>/<letter>/<int:number>',
         view_func=JukeboxPlay.as_view('jukebox_play'))
-app.add_url_rule('/api/tracks/<int:wallbox>',
+app.add_url_rule('/api/track/<int:wallbox>',
         view_func=JukeboxTracks.as_view('jukebox_tracks'), methods=['GET'])
 app.add_url_rule('/api/track/<int:wallbox>/<letter>/<int:number>',
         view_func=JukeboxTrack.as_view('jukebox_track'), methods=['GET',

@@ -99,8 +99,8 @@ class JukeboxModel:
 
         """
         _cursor.execute(
-            'REPLACE INTO tracks (ID, wallbox, letter, number, artist, title, action) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            (track['id'], track['wallbox'], track['letter'], track['number'], track['artist'], track['title'], track['action']))
+            'REPLACE INTO tracks (ID, wallbox, letter, number, artist, title, action_title, action_cmd) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            (track['ID'], track['wallbox'], track['letter'], track['number'], track['artist'], track['title'], track['action_title'], track['action_cmd']))
         _conn.commit()
 
 

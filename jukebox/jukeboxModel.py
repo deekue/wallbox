@@ -2,7 +2,7 @@ import sqlite3
 import os
 
 application_path = os.path.dirname(__file__)
-dbFilePath = os.path.join(application_path, 'jukebox.db')
+dbFilePath = os.path.join(application_path, '..', 'jukebox.db')
 
 TRACKS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS tracks (
@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS tracks (
   number  INTEGER NOT NULL,
   artist  TEXT NOT NULL,
   title   TEXT NOT NULL,
-  action  INTEGER NOT NULL
-                  DEFAULT ( 0 ),
+  action_title  TEXT NOT NULL,
+  action_cmd    TEXT NOT NULL,
   UNIQUE(wallbox, letter, number)
 );
 """
@@ -40,6 +40,29 @@ _conn.commit()
 
 def dict_from_row(row):
     return dict(zip(row.keys(), row))       
+
+def generate_tracks(wallbox, highest_letter='V', highest_number=10):
+    """generate tracks for a wallox for the specified max letter/number
+    this will overwrite any existing tracks for the specified wallbox
+
+    :wallbox: which wallbox to generate tracks for
+    :highest_letter: generate tracks for A to highest_letter
+    :highest_number: generate tracks for 1 to highest_number
+    :returns: None
+
+    """
+    # as far as I know, most wallboxes use 1-9,0
+    if highest_number > 10:
+        highest_number = 10
+    for letter in range(ord('A'), ord(highest_letter)):
+        for number in range(1, highest_number+1):
+            print "%d %s%d" % (wallbox, chr(letter), number % 10)
+            _cursor.execute(
+                '''REPLACE INTO tracks (wallbox, letter, number, artist, title, action_title, action_cmd)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)''', 
+                (wallbox, chr(letter), number % 10, '', '', '', '',))
+    _conn.commit()
+
 
 class JukeboxModel:
     def __init__(self):

@@ -66,7 +66,8 @@
 #   number - int
 #   artist - text
 #   title  - text
-#   action - int
+#   action_title - text
+#   action_cmd - text 
 # settings
 #   id - int primary key
 #   category - text
@@ -75,7 +76,7 @@
 
 from flask import Flask
 
-from jukebox.jukeboxView import JukeboxView, JukeboxPlay, JukeboxTrack, JukeboxTracks
+from jukebox.jukeboxView import JukeboxView, JukeboxPlay, JukeboxTrack, JukeboxTracks, JukeboxGenTracks
 
 app = Flask(__name__)
 
@@ -88,6 +89,8 @@ app.add_url_rule('/api/tracks/<int:wallbox>',
 app.add_url_rule('/api/track/<int:wallbox>/<letter>/<int:number>',
         view_func=JukeboxTrack.as_view('jukebox_track'), methods=['GET',
             'POST',])
+app.add_url_rule('/api/gen/<int:wallbox>/<highest_letter>/<int:highest_number>',
+        view_func=JukeboxGenTracks.as_view('jukebox_gen'))
 # TODO add routing for settings
 
 if __name__ == '__main__':

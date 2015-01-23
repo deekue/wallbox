@@ -1,5 +1,5 @@
 from flask import request, jsonify, render_template
-from jukeboxModel import JukeboxModel
+from jukeboxModel import JukeboxModel, generate_tracks
 
 import flask.views
 import json
@@ -32,3 +32,9 @@ class JukeboxTrack(flask.views.MethodView):
         JukeboxModel.update_track(track)
         return jsonify(success=True)
         
+class JukeboxGenTracks(flask.views.MethodView):
+    def get(self, wallbox, highest_letter, highest_number):
+        generate_tracks(wallbox, highest_letter, highest_number)
+        return "Generated tracks for wallbox:%d from A1 to %s%s" % (wallbox,
+                highest_letter, highest_number)
+

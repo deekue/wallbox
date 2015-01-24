@@ -12,10 +12,10 @@
     var TrackList = $resource('/api/track/:wallbox/:letter/:number', {wallbox:1});
     $log.log("grabbing track list");
     $scope.tracks = TrackList.query(); //TODO add error handler
-    $scope.newTrack = {};
-    $scope.origTracks = [];
-    $scope.currentPage = 1;
-    $scope.itemsPerPage = 10;
+    $scope.newTrack = {}; //edit form
+    $scope.origTracks = []; // for form reset
+    $scope.currentPage = 1; // pagination
+    $scope.itemsPerPage = 10; //pagination
 
     // pagination
     $scope.tracks.$promise.then(function () {
@@ -29,29 +29,28 @@
 
     this.showEditForm = function(index) {
       if(typeof $scope.tracks[index].showEditForm == "undefined") {
-        $scope.tracks[index].showEditForm = true;
+        $scope.filteredTracks[index].showEditForm = true;
       }
-      if($scope.tracks[index].showEditForm) {
-        $scope.tracks[index].showEditForm = false;
+      if($scope.filteredTracks[index].showEditForm) {
+        $scope.filteredTracks[index].showEditForm = false;
       } else {
         // now displaying the form, copy the original to enable reset()
-        $scope.origTracks[index] = angular.copy($scope.tracks[index]);
-        $scope.tracks[index].showEditForm = true;
+        $scope.origTracks[index] = angular.copy($scope.filteredTracks[index]);
+        $scope.filteredTracks[index].showEditForm = true;
       }
     };
 
     this.isEditFormVisible = function(index) {
-      if(typeof $scope.tracks[index].showEditForm == "undefined") {
-        $scope.tracks[index].showEditForm = false;
+      if(typeof $scope.filteredTracks[index].showEditForm == "undefined") {
+        $scope.filteredTracks[index].showEditForm = false;
       }
-      return $scope.tracks[index].showEditForm;
+      return $scope.filteredTracks[index].showEditForm;
     };
 
     this.editTrack = function(index) {
-      track_letter = $scope.tracks[index].letter;
-      track_number = $scope.tracks[index].number;
-      newTrack = angular.copy($scope.tracks[index]);
-      //$scope.tracks[index].$save({letter:track_letter, number:track_number}, function(){
+      track_letter = $scope.filteredTracks[index].letter;
+      track_number = $scope.filteredTracks[index].number;
+      newTrack = angular.copy($scope.filteredTracks[index]);
       newTrack.$save({letter:track_letter, number:track_number}, function(){
         jukeCtrl.showEditForm(index);
       }, function(httpResponse){
@@ -60,7 +59,7 @@
     };
 
     this.reset = function(index) {
-      $scope.tracks[index] = angular.copy($scope.origTracks[index]);
+      $scope.filteredTracks[index] = angular.copy($scope.origTracks[index]);
     };
 
   } ] );

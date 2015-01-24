@@ -99,7 +99,7 @@ def calculate_seeburg_track(pre, post):
         letter_index += 1
     number = pre % 10
     
-    return (letter, number)
+    return (SELECTION_LETTERS[letter_index], number)
 
 def calculate_amirowe_track(pre, post):
     """calculates a track selection for an AMi/Rowe Wallbox

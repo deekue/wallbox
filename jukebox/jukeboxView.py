@@ -31,7 +31,5 @@ class JukeboxTrack(flask.views.MethodView):
         
 class JukeboxGenTracks(flask.views.MethodView):
     def get(self, wallbox, highest_letter, highest_number):
-        generate_tracks(wallbox, highest_letter, highest_number)
-        return "Generated tracks for wallbox:%d from A1 to %s%s" % (wallbox,
-                highest_letter, highest_number)
+        return jsonify(generate_tracks(wallbox, highest_letter, highest_number))
 

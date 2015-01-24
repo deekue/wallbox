@@ -4,6 +4,9 @@ import os
 application_path = os.path.dirname(__file__)
 dbFilePath = os.path.join(application_path, '..', 'jukebox.db')
 
+SELECTION_LETTERS=("A","B","C","D","E","F","G","H","J","K","L","M","N","P","Q","R","S","T","U","V")
+MAX_NUMBER=10
+
 TRACKS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS tracks (
   ID      INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,23 +48,37 @@ def generate_tracks(wallbox, highest_letter='V', highest_number=10):
     """generate tracks for a wallox for the specified max letter/number
     this will overwrite any existing tracks for the specified wallbox
 
+    NOTE: letters I and O are skipped
+
     :wallbox: which wallbox to generate tracks for
     :highest_letter: generate tracks for A to highest_letter
     :highest_number: generate tracks for 1 to highest_number
-    :returns: None
+    :returns: dict(success=[True|False], tracks[(letter1, number1)...])
 
     """
+    result = {}
+    result['tracks'] = []
+
     # as far as I know, most wallboxes use 1-9,0
-    if highest_number > 10:
-        highest_number = 10
-    for letter in range(ord('A'), ord(highest_letter)):
+    if highest_number > MAX_NUMBER:
+        highest_number = MAX_NUMBER
+
+    try:
+        highest_index=SELECTION_LETTERS.index(highest_letter)
+    except ValueError:
+        result['success'] = False
+        return result
+
+    for letter_index in range(0, highest_index+1):
         for number in range(1, highest_number+1):
-            print "%d %s%d" % (wallbox, chr(letter), number % 10)
+            result['tracks'].append((SELECTION_LETTERS[letter_index], number % highest_number))
             _cursor.execute(
                 '''REPLACE INTO tracks (wallbox, letter, number, artist, title, action_title, action_cmd)
                    VALUES (?, ?, ?, ?, ?, ?, ?)''', 
-                (wallbox, chr(letter), number % 10, '', '', '', '',))
+                (wallbox, SELECTION_LETTERS[letter_index], number % highest_number, '', '', '', '',))
     _conn.commit()
+    result['success'] = True
+    return result
 
 
 class JukeboxModel:

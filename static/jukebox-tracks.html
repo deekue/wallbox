@@ -9,6 +9,7 @@
 					<th>Artist</th>
 					<th>Title</th>
 					<th>Action</th>
+					<th>Command</th>
 					<th>&nbsp;</th>
 				</tr>
 			</thead>
@@ -33,8 +34,11 @@
             <input ng-model="filteredTracks[$index].title" ng-show="jukeboxCtrl.isEditFormVisible($index)" name="title_$index" type="text" value="{{track.title}}">
           </td>
 					<td>
-            <span ng-show="!jukeboxCtrl.isEditFormVisible($index)">{{track.action}}</span>
-            <input ng-model="filteredTracks[$index].action" ng-show="jukeboxCtrl.isEditFormVisible($index)" name="action_$index" type="text" value="{{track.action}}">
+            <select ng-model="filteredTracks[$index].action_title" ng-disabled="!jukeboxCtrl.isEditFormVisible($index)" ng-options="item.value as item.name for item in track_actions">
+          </td>
+					<td>
+            <span ng-show="!jukeboxCtrl.isEditFormVisible($index)">{{track.action_cmd}}</span>
+            <input ng-model="filteredTracks[$index].action_cmd" ng-show="jukeboxCtrl.isEditFormVisible($index)" name="action_cmd_$index" type="text" value="{{track.action_cmd}}">
           </td>
 					<td align="right">
 						<div ng-show="!jukeboxCtrl.isEditFormVisible($index)" class="btn-group" role="group" aria-label="Tools">

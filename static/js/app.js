@@ -16,6 +16,8 @@
     $scope.origTracks = []; // for form reset
     $scope.currentPage = 1; // pagination
     $scope.itemsPerPage = 10; //pagination
+    //TODO $scope.track_actions = $resource('/api/track_actions');
+    $scope.track_actions = [{name:'Sonos URI', value:'sonos_uri'}, {name:'System command', value:'sys_cmd'},];
 
     // pagination
     $scope.tracks.$promise.then(function () {
@@ -51,6 +53,7 @@
       track_letter = $scope.filteredTracks[index].letter;
       track_number = $scope.filteredTracks[index].number;
       newTrack = angular.copy($scope.filteredTracks[index]);
+      $log.log(newTrack.action_title);
       newTrack.$save({letter:track_letter, number:track_number}, function(){
         jukeCtrl.showEditForm(index);
       }, function(httpResponse){

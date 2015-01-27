@@ -4,8 +4,7 @@
 		<table class="table table-striped">
 			<thead>
 				<tr>
-					<th>Letter</th>
-					<th>Number</th>
+					<th>Track</th>
 					<th>Artist</th>
 					<th>Title</th>
 					<th>Action</th>
@@ -20,8 +19,6 @@
             <input ng-model="filteredTracks[$index].id" name="id_$index" type="hidden" value="{{track.id}}">
             {{track.letter}}
             <input ng-model="filteredTracks[$index].letter" name="letter_$index" type="hidden" value="{{track.letter}}">
-          </td>
-					<td>
             {{track.number}}
             <input ng-model="filteredTracks[$index].number" name="number_$index" type="hidden" value="{{track.number}}">
           </td>

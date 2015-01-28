@@ -76,13 +76,13 @@
 
 from flask import Flask
 
-from jukebox.jukeboxView import JukeboxView, JukeboxPlay, JukeboxTrack, JukeboxTracks, JukeboxGenTracks
+from jukebox.jukeboxView import JukeboxView, JukeboxPlay, JukeboxTrack, JukeboxTracks, JukeboxGenTracks, JukeboxActions
 
 app = Flask(__name__)
 
-app.add_url_rule('/', view_func=JukeboxView.as_view('jukebox_view'),
-    methods=['GET'])
-app.add_url_rule('/api/play/<int:wallbox>/<letter>/<int:number>',
+app.add_url_rule('/',
+        view_func=JukeboxView.as_view('jukebox_view'), methods=['GET'])
+app.add_url_rule('/play/<int:wallbox>/<letter>/<int:number>',
         view_func=JukeboxPlay.as_view('jukebox_play'))
 app.add_url_rule('/api/track/<int:wallbox>',
         view_func=JukeboxTracks.as_view('jukebox_tracks'), methods=['GET'])
@@ -91,6 +91,8 @@ app.add_url_rule('/api/track/<int:wallbox>/<letter>/<int:number>',
             'POST',])
 app.add_url_rule('/api/gen/<int:wallbox>/<highest_letter>/<int:highest_number>',
         view_func=JukeboxGenTracks.as_view('jukebox_gen'))
+app.add_url_rule('/api/actions',
+        view_func=JukeboxActions.as_view('jukebox_track_actions'))
 # TODO add routing for settings
 
 if __name__ == '__main__':

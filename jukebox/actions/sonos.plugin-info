@@ -1,0 +1,8 @@
+[Core]
+Name = SONOS
+Module = sonos
+
+[Documentation]
+Description = Provide support for SONOS music systems
+Author = Daniel Quinlan <daniel@chaosengine.net>
+Version = 0.1

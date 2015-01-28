@@ -1,8 +1,10 @@
 from flask import request, jsonify, render_template
 from jukeboxModel import JukeboxModel, generate_tracks
 
+import actions
 import flask.views
 import json
+
 
 class JukeboxView(flask.views.MethodView):
     def get(self):
@@ -10,9 +12,13 @@ class JukeboxView(flask.views.MethodView):
 
 class JukeboxPlay(flask.views.MethodView):
     def get(self, wallbox, letter, number):
-        # TODO add action code here
-        print "play track %s%s for wallbox %s" % (letter, number, wallbox)
-        return jsonify(success=True)
+        track = JukeboxModel.retrieve_track(wallbox, letter, number)
+        (result, message) = actions.runAction(track['action_title'], track['action_cmd'])
+        if result:
+            message = "play track %s%s for wallbox %s via '%s %s': %s" % (letter,
+                    number, wallbox, track['action_title'],
+                    track['action_cmd'], message)
+        return jsonify(result=result, message=message)
 
 class JukeboxTracks(flask.views.MethodView):
     def get(self, wallbox):
@@ -32,4 +38,8 @@ class JukeboxTrack(flask.views.MethodView):
 class JukeboxGenTracks(flask.views.MethodView):
     def get(self, wallbox, highest_letter, highest_number):
         return jsonify(generate_tracks(wallbox, highest_letter, highest_number))
+
+class JukeboxActions(flask.views.MethodView):
+    def get(self):
+        return json.dumps(actions.listActions())
 

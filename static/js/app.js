@@ -10,14 +10,14 @@
     var jukeCtrl = this;
     // TODO add support for mulitple wallboxes
     var TrackList = $resource('/api/track/:wallbox/:letter/:number', {wallbox:1});
+    var ActionList = $resource('/api/actions');
     $log.log("grabbing track list");
     $scope.tracks = TrackList.query(); //TODO add error handler
     $scope.newTrack = {}; //edit form
     $scope.origTracks = []; // for form reset
     $scope.currentPage = 1; // pagination
     $scope.itemsPerPage = 10; //pagination
-    //TODO $scope.track_actions = $resource('/api/track_actions');
-    $scope.track_actions = [{name:'Sonos URI', value:'sonos_uri'}, {name:'System command', value:'sys_cmd'},];
+    $scope.track_actions = ActionList.query(); //TODO add error handler
 
     // pagination
     $scope.tracks.$promise.then(function () {

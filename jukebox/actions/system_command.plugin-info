@@ -1,0 +1,8 @@
+[Core]
+Name = System Command
+Module = system_command
+
+[Documentation]
+Description = Provide support for system commands
+Author = Daniel Quinlan <daniel@chaosengine.net>
+Version = 0.1

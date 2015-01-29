@@ -60,8 +60,10 @@ def generate_tracks(wallbox, highest_letter='V', highest_number=10):
     result['tracks'] = []
 
     # as far as I know, most wallboxes use 1-9,0
-    if highest_number > MAX_NUMBER:
-        highest_number = MAX_NUMBER
+    if highest_number >= 10:
+        number_range = range(1,10) + [0,]
+    else:
+        number_range = range(1,highest_number+1)
 
     try:
         highest_index=SELECTION_LETTERS.index(highest_letter)
@@ -70,12 +72,12 @@ def generate_tracks(wallbox, highest_letter='V', highest_number=10):
         return result
 
     for letter_index in range(0, highest_index+1):
-        for number in range(1, highest_number+1):
+        for number in number_range:
             result['tracks'].append((SELECTION_LETTERS[letter_index], number % highest_number))
             _cursor.execute(
                 '''REPLACE INTO tracks (wallbox, letter, number, artist, title, action_title, action_cmd)
                    VALUES (?, ?, ?, ?, ?, ?, ?)''', 
-                (wallbox, SELECTION_LETTERS[letter_index], number % highest_number, '', '', '', '',))
+                (wallbox, SELECTION_LETTERS[letter_index], number, '', '', '', '',))
     _conn.commit()
     result['success'] = True
     return result
@@ -94,7 +96,7 @@ class JukeboxModel:
 
         """
         rows = _cursor.execute(
-            'SELECT * FROM tracks WHERE wallbox=?', (wallbox, )
+            'SELECT * FROM tracks WHERE wallbox=? ORDER BY ID', (wallbox, )
         )
         return [dict_from_row(item) for item in rows.fetchall()]
         

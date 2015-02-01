@@ -18,9 +18,7 @@ class Sonos(IPlugin):
         else:
             self.refreshPlayerList()
             # TODO get default player from settings
-            print 'setting default player to Kitchen'
             (res, msg) = self.setDefaultPlayer('Kitchen')
-            print msg
             if res:
                 super(Sonos, self).activate()
 
@@ -46,8 +44,6 @@ class Sonos(IPlugin):
             return "no default player set"
 
     def setDefaultPlayer(self, playerName):
-        # TODO fix this
-        self._defaultPlayer = soco.SoCo("192.168.136.112")
         if self._players.has_key(playerName):
             self._defaultPlayer = self._players[playerName]
             return (True, "default player set to %s" % playerName)
@@ -56,9 +52,7 @@ class Sonos(IPlugin):
 
     def refreshPlayerList(self):
         players = soco.discover()
-        print players
-        for player in self._players:
-            print 'adding player %s' % player.player_name
+        for player in players:
             self._players[player.player_name] = player
 
 

@@ -1,7 +1,7 @@
 wallbox
 =======
 
-Python code for Wallbox Controller.
+Python code for [RaspberryPi](http://raspberrypi.org) Wallbox Controller.
 Based on:
 - [sjdevlin](https://github.com/sjdevlin)'s [Wallbox project](http://wallbox.weebly.com/)
 - [phil-lavin](https://github.com/phil-lavin)'s interrupt driven version in C [raspberry-pi-seeburg-wallbox](https://github.com/phil-lavin/raspberry-pi-seeburg-wallbox)

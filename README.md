@@ -7,6 +7,8 @@ Two components
 - jukeboxy.py - 'jukebox' to play track selections
 
 Requirements:
-Sonos library - http://github.com/SoCo/SoCo
 Flask - apt-get install python-flask
 Sqlite - apt-get install python-pysqlite2
+PiP - apt-get install python-pip
+YAPSY - pip install yapsy
+SoCo - pip install soco

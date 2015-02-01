@@ -32,16 +32,19 @@ class Sonos(IPlugin):
     def play_uri(self, uri):
         if self._defaultPlayer is not None:
             self._defaultPlayer.add_uri_to_queue(uri)
-            self._defaultPlayer.play()
-            return "playing %s" % uri
+            # if player isn't currently playing, start at new track
+            state = self._defaultPlayer.group.coordinator.get_current_transport_info()
+            if state['current_transport_state'] != "PLAYING":
+                # this is racy but it's a music player not a nuclear power plant
+                q = self._defaultPlayer.get_queue()
+                self._defaultPlayer.play_from_queue(len(q)-1)
+            return "queueing %s" % uri
         else:
             return "no default player set"
 
     def play_playlist(self, playlist):
-        if self._defaultPlayer is not None:
-            return "playing %s" % playlist
-        else:
-            return "no default player set"
+        # TODO enqueue each item in the playlist?  or just let Sonos handle it?
+        return self.play_uri(playlist)
 
     def setDefaultPlayer(self, playerName):
         if self._players.has_key(playerName):

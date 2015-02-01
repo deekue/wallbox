@@ -3,6 +3,7 @@
 # based on:
 # https://github.com/phil-lavin/raspberry-pi-seeburg-wallbox/blob/master/pi-seeburg.c
 
+import httplib
 import logging
 import sys
 import time
@@ -67,7 +68,7 @@ def handle_gpio_interrupt(channel):
     else:
         logger.debug("Locked.  Ignoring interrupt")
 
-def handle_key_combo(letter, number):
+def handle_key_combo(host, url, wallbox, letter, number):
     """play/queue a song represented by letter+number
   
     :letter: Wallbox letter button selected
@@ -76,8 +77,12 @@ def handle_key_combo(letter, number):
   
     """
     global logger
-    # TODO add Sonos stuff here
+    url = url % {'wallbox': wallbox, 'letter': letter, 'number': number}
     logger.info("selection: %s%d" % (letter, number))
+    conn = httplib.HTTPConnection(host)
+    conn.request("GET", url)
+    res = conn.getresponse()
+    logger.info(res)
 
 def calculate_seeburg_track(pre, post):
     """calculates a track selection for a Seeburg Wallbox
@@ -144,9 +149,18 @@ def main(argv=None):
     if argv is None:
       argv = sys.argv
     parser = OptionParser()
-    parser.add_option("-w", "--wallbox", dest="wallbox_type",
+    parser.add_option("-w", "--wallbox_type", dest="wallbox_type",
                       default="wurlitzer",
                       help="Wallbox type (amirowe,seeburg,wurlitzer) [%default]")
+    parser.add_option("-n", "--wallbox_number", dest="wallbox_number",
+                      default=1,
+                      help="identify which wallbox this is to the jukebox [%default]")
+    parser.add_option("-t", "--host", dest="host",
+                      default="localhost:5000",
+                      help="Host to use with URL [%default]")
+    parser.add_option("-u", "--url", dest="uri",
+                      default="/play/%(wallbox)d/%(letter)s/%(number)d",
+                      help="URL on host to get to queue select track [%default]")
     parser.add_option("-l", "--logfile", dest="logfile",
                       default="/tmp/jukebox_controller.log",
                       help="file to log to [%default]")
@@ -187,7 +201,7 @@ def main(argv=None):
                 lock.acquire()
                 logger.debug("running calculate_track(%d, %d)" % (pre, post))
                 (letter, number) = calculate_track(pre, post)
-                handle_key_combo(letter, number)
+                handle_key_combo(options.host, options.url, options.wallbox_number, letter, number)
             
             # Reset counters
             if pre_gap_pulses or post_gap_pulses:

@@ -100,8 +100,6 @@ def calculate_seeburg_track(pre, post):
     letter_index = (2 * post)
     if pre > 10:
         letter_index += 1
-    if letter_index > 8: # hack for missing I
-        letter_index += 1
     number = pre % 10
     
     return (SELECTION_LETTERS[letter_index], number)
@@ -127,9 +125,7 @@ def calculate_wurlitzer_track(pre, post):
     global SELECTION_LETTERS
     
     letter = SELECTION_LETTERS[pre - 1]
-    number = post + 1
-    if number > 9:
-        number = 0
+    number = (post + 1) % 10
     return (letter, number)
 
 

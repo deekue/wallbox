@@ -24,10 +24,10 @@ CREATE TABLE IF NOT EXISTS tracks (
 SETTINGS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS settings (
   ID       INTEGER PRIMARY KEY AUTOINCREMENT,
-  category TEXT NOT NULL,
-  key      TEXT NOT NULL,
+  section  TEXT NOT NULL,
+  option   TEXT NOT NULL,
   value    TEXT NOT NULL,
-  UNIQUE(category, key)
+  UNIQUE(section, option)
 );
 """
 

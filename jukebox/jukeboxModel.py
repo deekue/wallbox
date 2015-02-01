@@ -44,44 +44,6 @@ _conn.commit()
 def dict_from_row(row):
     return dict(zip(row.keys(), row))       
 
-def generate_tracks(wallbox, highest_letter='V', highest_number=10):
-    """generate tracks for a wallox for the specified max letter/number
-    this will overwrite any existing tracks for the specified wallbox
-
-    NOTE: letters I and O are skipped
-
-    :wallbox: which wallbox to generate tracks for
-    :highest_letter: generate tracks for A to highest_letter
-    :highest_number: generate tracks for 1 to highest_number
-    :returns: dict(success=[True|False], tracks[(letter1, number1)...])
-
-    """
-    result = {}
-    result['tracks'] = []
-
-    # as far as I know, most wallboxes use 1-9,0
-    if highest_number >= 10:
-        number_range = range(1,10) + [0,]
-    else:
-        number_range = range(1,highest_number+1)
-
-    try:
-        highest_index=SELECTION_LETTERS.index(highest_letter)
-    except ValueError:
-        result['success'] = False
-        return result
-
-    for letter_index in range(0, highest_index+1):
-        for number in number_range:
-            result['tracks'].append((SELECTION_LETTERS[letter_index], number % highest_number))
-            _cursor.execute(
-                '''REPLACE INTO tracks (wallbox, letter, number, artist, title, action_title, action_cmd)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)''', 
-                (wallbox, SELECTION_LETTERS[letter_index], number, '', '', '', '',))
-    _conn.commit()
-    result['success'] = True
-    return result
-
 
 class JukeboxModel:
     def __init__(self):
@@ -122,4 +84,63 @@ class JukeboxModel:
             (track['ID'], track['wallbox'], track['letter'], track['number'], track['artist'], track['title'], track['action_title'], track['action_cmd']))
         _conn.commit()
 
+    @classmethod
+    def generate_empty_tracks(self, highest_letter='V', highest_number=10):
+        """generate tracks for a wallox for the specified max letter/number
+        this will overwrite any existing tracks for the specified wallbox
+
+        NOTE: letters I and O are skipped
+
+        :highest_letter: generate tracks for A to highest_letter
+        :highest_number: generate tracks for 1 to highest_number
+        """
+        # as far as I know, most wallboxes use 1-9,0
+        if highest_number >= 10:
+            number_range = range(1,10) + [0,]
+        else:
+            number_range = range(1,highest_number+1)
+
+        try:
+            highest_index=SELECTION_LETTERS.index(highest_letter)
+        except ValueError:
+            highest_index=len(SELECTION_LETTERS)-1
+
+        for letter_index in range(0, highest_index+1):
+            for number in number_range:
+                yield {'letter': SELECTION_LETTERS[letter_index], 'number': number,
+                    'artist': '', 'title': '', 'action_title': '', 'action_cmd': ''}
+
+    @classmethod
+    def generate_static_sonos_tracks(self, highest_letter, highest_number):
+        """TODO this should be part of the Sonos plugin"""
+        for track in JukeboxModel.generate_empty_tracks(highest_letter,
+                highest_number):
+            track['action_title'] = 'SONOS.play_file'
+            track['action_cmd'] = '%s%s.mp3' % (track['letter'], track['number'])
+            yield track
+
+    @classmethod
+    def set_tracks(self, wallbox, track_generator):
+        """create tracks in the db for the given wallbox using the specified
+        generator for input.
+
+        :param wallbox: id of the wallbox to generate tracks for
+        :type wallbox: int
+        :param track_generator: a Python generator that a dict for each track of the form
+            {'letter': 'A', 'number': 1, 'artist': 'Elvis Parsely', 'title': 'Heart
+            Break Motel', 'action_title': 'SONOS.play_file', 'action_cmd':
+            'A1.mp3'}
+            letter and nubmer are required, everything else is optional
+        """
+        result = {}
+        with _conn:
+            for item in track_generator:
+                track = '%s%s' % (item['letter'], item['number'])
+                result[track] = (wallbox, item['letter'], item['number'], item['artist'],
+                       item['title'], item['action_title'], item['action_cmd'])
+                _cursor.execute(
+                    '''REPLACE INTO tracks (wallbox, letter, number, artist, title, action_title, action_cmd)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)''', 
+                    result[track])
+        return result
 

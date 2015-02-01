@@ -1,5 +1,5 @@
 from flask import request, jsonify, render_template
-from jukeboxModel import JukeboxModel, generate_tracks
+from jukeboxModel import JukeboxModel
 
 import actions
 import flask.views
@@ -36,8 +36,11 @@ class JukeboxTrack(flask.views.MethodView):
         return jsonify(success=True)
         
 class JukeboxGenTracks(flask.views.MethodView):
+    # TODO this should be a POST
+    # TODO should be using a specifed track generator (from plugins)
     def get(self, wallbox, highest_letter, highest_number):
-        return jsonify(generate_tracks(wallbox, highest_letter, highest_number))
+        return jsonify(JukeboxModel.set_tracks(wallbox,
+            JukeboxModel.generate_static_sonos_tracks(highest_letter, highest_number)))
 
 class JukeboxActions(flask.views.MethodView):
     def get(self):

@@ -32,7 +32,6 @@ class Sonos(IPlugin):
     def play_uri(self, uri):
         if self._defaultPlayer is not None:
             self._defaultPlayer.add_uri_to_queue(uri)
-            # if player isn't currently playing, start at new track
             state = self._defaultPlayer.group.coordinator.get_current_transport_info()
             if state['current_transport_state'] != "PLAYING":
                 # this is racy but it's a music player not a nuclear power plant

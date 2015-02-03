@@ -13,11 +13,11 @@ class JukeboxView(flask.views.MethodView):
 class JukeboxPlay(flask.views.MethodView):
     def get(self, wallbox, letter, number):
         track = JukeboxModel.retrieve_track(wallbox, letter, number)
-        (result, message) = actions.runAction(track['action_title'], track['action_cmd'])
+        (result, message) = actions.runAction(track['action_plugin'], track['action_args'])
         if result:
             message = "play track %s%s for wallbox %s via '%s %s': %s" % (letter,
-                    number, wallbox, track['action_title'],
-                    track['action_cmd'], message)
+                    number, wallbox, track['action_plugin'],
+                    track['action_args'], message)
         return jsonify(result=result, message=message)
 
 class JukeboxTracks(flask.views.MethodView):

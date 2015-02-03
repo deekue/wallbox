@@ -66,8 +66,8 @@
 #   number - int
 #   artist - text
 #   title  - text
-#   action_title - text
-#   action_cmd - text 
+#   action_plugin - text
+#   action_args - text 
 # settings
 #   id - int primary key
 #   category - text

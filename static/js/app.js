@@ -53,7 +53,7 @@
       track_letter = $scope.filteredTracks[index].letter;
       track_number = $scope.filteredTracks[index].number;
       newTrack = angular.copy($scope.filteredTracks[index]);
-      $log.log(newTrack.action_title);
+      $log.log(newTrack.action_plugin);
       newTrack.$save({letter:track_letter, number:track_number}, function(){
         jukeCtrl.showEditForm(index);
       }, function(httpResponse){

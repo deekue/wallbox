@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS tracks (
   number  INTEGER NOT NULL,
   artist  TEXT NOT NULL,
   title   TEXT NOT NULL,
-  action_title  TEXT NOT NULL,
-  action_cmd    TEXT NOT NULL,
+  action_plugin  TEXT NOT NULL,
+  action_args    TEXT NOT NULL,
   UNIQUE(wallbox, letter, number)
 );
 """
@@ -80,8 +80,8 @@ class JukeboxModel:
 
         """
         _cursor.execute(
-            'REPLACE INTO tracks (ID, wallbox, letter, number, artist, title, action_title, action_cmd) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            (track['ID'], track['wallbox'], track['letter'], track['number'], track['artist'], track['title'], track['action_title'], track['action_cmd']))
+            'REPLACE INTO tracks (ID, wallbox, letter, number, artist, title, action_plugin, action_args) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            (track['ID'], track['wallbox'], track['letter'], track['number'], track['artist'], track['title'], track['action_plugin'], track['action_args']))
         _conn.commit()
 
     @classmethod
@@ -108,15 +108,15 @@ class JukeboxModel:
         for letter_index in range(0, highest_index+1):
             for number in number_range:
                 yield {'letter': SELECTION_LETTERS[letter_index], 'number': number,
-                    'artist': '', 'title': '', 'action_title': '', 'action_cmd': ''}
+                    'artist': '', 'title': '', 'action_plugin': '', 'action_args': ''}
 
     @classmethod
     def generate_static_sonos_tracks(self, highest_letter, highest_number):
         """TODO this should be part of the Sonos plugin"""
         for track in JukeboxModel.generate_empty_tracks(highest_letter,
                 highest_number):
-            track['action_title'] = 'SONOS.play_file'
-            track['action_cmd'] = '%s%s.mp3' % (track['letter'], track['number'])
+            track['action_plugin'] = 'SONOS.play_file'
+            track['action_args'] = '%s%s.mp3' % (track['letter'], track['number'])
             yield track
 
     @classmethod
@@ -128,7 +128,7 @@ class JukeboxModel:
         :type wallbox: int
         :param track_generator: a Python generator that a dict for each track of the form
             {'letter': 'A', 'number': 1, 'artist': 'Elvis Parsely', 'title': 'Heart
-            Break Motel', 'action_title': 'SONOS.play_file', 'action_cmd':
+            Break Motel', 'action_plugin': 'SONOS.play_file', 'action_args':
             'A1.mp3'}
             letter and nubmer are required, everything else is optional
         """
@@ -137,9 +137,9 @@ class JukeboxModel:
             for item in track_generator:
                 track = '%s%s' % (item['letter'], item['number'])
                 result[track] = (wallbox, item['letter'], item['number'], item['artist'],
-                       item['title'], item['action_title'], item['action_cmd'])
+                       item['title'], item['action_plugin'], item['action_args'])
                 _cursor.execute(
-                    '''REPLACE INTO tracks (wallbox, letter, number, artist, title, action_title, action_cmd)
+                    '''REPLACE INTO tracks (wallbox, letter, number, artist, title, action_plugin, action_args)
                        VALUES (?, ?, ?, ?, ?, ?, ?)''', 
                     result[track])
         return result

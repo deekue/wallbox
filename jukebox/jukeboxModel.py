@@ -144,3 +144,36 @@ class JukeboxModel:
                     result[track])
         return result
 
+    @classmethod
+    def retrieve_settings(self):
+        """retrieve all settings
+
+        :returns: list of categories, each containing a list of items
+
+        """
+        rows = _cursor.execute('SELECT * FROM settings ORDER BY category, item')
+        return [dict_from_row(item) for item in rows.fetchall()]
+
+    @classmethod
+    def retrieve_category(self, category):
+        """retrieve all items for the specified category
+
+        :returns: list of items
+        """
+        rows = _cursor.execute('SELECT * FROM settings WHERE category=? ORDER BY item',
+            (category,))
+        return [dict_from_row(item) for item in rows.fetchall()]
+
+    @classmethod
+    def update_category(self, category, items):
+        success = False
+        with _conn:
+            for item in items:
+                _cursor.execute(
+                    'REPLACE INTO settings (ID, category, item, value) VALUES (?, ?, ?, ?)',
+                    (item['ID'], category, item['item'], item['value']))
+            success = True
+        return success
+
+        
+

@@ -80,7 +80,8 @@ from optparse import OptionParser
 import logging
 import sys
 
-from jukebox.jukeboxView import JukeboxView, JukeboxPlay, JukeboxTrack, JukeboxTracks, JukeboxGenTracks, JukeboxActions
+from jukebox.jukeboxView import JukeboxView, JukeboxPlay, JukeboxTrack, JukeboxTracks, JukeboxGenTracks, JukeboxActions, JukeboxSettings, JukeboxSettingCategory
+
 
 app = Flask(__name__)
 
@@ -98,6 +99,11 @@ app.add_url_rule('/api/gen/<int:wallbox>/<highest_letter>/<int:highest_number>',
 app.add_url_rule('/api/actions',
         view_func=JukeboxActions.as_view('jukebox_track_actions'))
 # TODO add routing for settings
+app.add_url_rule('/api/settings',
+        view_func=JukeboxSettings.as_view('jukebox_settings'), methods=['GET'])
+app.add_url_rule('/api/setting/<category>',
+        view_func=JukeboxSettingCategory.as_view('jukebox_setting_category'),
+        methods=['GET', 'POST'])
 
 def main(argv=None):
     # parse args

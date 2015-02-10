@@ -75,6 +75,10 @@
 #   value - text
 
 from flask import Flask
+from logging.handlers import RotatingFileHandler
+from optparse import OptionParser
+import logging
+import sys
 
 from jukebox.jukeboxView import JukeboxView, JukeboxPlay, JukeboxTrack, JukeboxTracks, JukeboxGenTracks, JukeboxActions
 
@@ -95,5 +99,35 @@ app.add_url_rule('/api/actions',
         view_func=JukeboxActions.as_view('jukebox_track_actions'))
 # TODO add routing for settings
 
+def main(argv=None):
+    # parse args
+    if argv is None:
+      argv = sys.argv
+    parser = OptionParser()
+    parser.add_option("-l", "--logfile", dest="logfile",
+                      default="/tmp/jukebox.log",
+                      help="file to log to [%default]")
+    parser.add_option("-d", "--debug", action="store_true", dest="debug",
+                      default=False,
+                      help="enable debug logging [%default]")
+    (options, args) = parser.parse_args(args=argv)
+
+    # set up logging
+    handler = RotatingFileHandler(options.logfile, maxBytes=1000000, backupCount=1)
+    formatter = logging.Formatter('%(levelname).1s%(asctime)s %(name)s: %(message)s')
+    handler.setFormatter(formatter)
+    if options.debug:
+        log_level = logging.DEBUG
+        host = "127.0.0.1"
+    else:
+        log_level = logging.INFO
+        host = "0.0.0.0"
+    app.logger.setLevel(log_level)
+    app.logger.addHandler(handler) 
+    werkzeug_log = logging.getLogger('werkzeug')
+    werkzeug_log.setLevel(log_level)
+    werkzeug_log.addHandler(handler)
+    app.run(host=host, debug=options.debug)
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    sys.exit(main())

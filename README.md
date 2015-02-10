@@ -1,5 +1,6 @@
 wallbox
 =======
+*WORK IN PROGRESS*
 
 Python code for [RaspberryPi](http://raspberrypi.org) Wallbox Controller.
 Based on:

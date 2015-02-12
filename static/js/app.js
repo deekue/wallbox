@@ -1,17 +1,38 @@
 // pagination code snippet from: http://plnkr.co/edit/AD1AGCYIm1dZhbuoPhxX?p=preview
 
 (function() {
-	var app = angular.module('jukebox', ['ui.bootstrap', 'ngResource']);
+	var app = angular.module('jukebox', ['ui.bootstrap', 'ngResource', 'ngRoute']);
 
-  app.factory('trackFactory', function($resource) {
-  });
+  app.config(['$routeProvider',
+    function($routeProvider) {
+      $routeProvider.
+        when('/tracks', {
+          templateUrl: 'static/jukebox-tracks.html',
+          controller: 'JukeboxController'
+        }).
+        when('/settings', {
+          templateUrl: 'static/jukebox-settings.html',
+          controller: 'SettingsController'
+        }).
+        when('/help', {
+          templateUrl: 'static/jukebox-help.html',
+        }).
+        otherwise({
+          redirectTo: '/tracks'
+        });
+    }]);
 
+  app.controller('SettingsController', ['$scope', '$log', '$resource', function($scope, $log, $resource){
+    var SettingsList = $resource('/api/settings');
+    $scope.settings = SettingsList.query(); //TODO add error handler
+    $scope.oneAtATime = true;
+  } ] );
+  
   app.controller('JukeboxController', ['$scope', '$log', '$resource', function($scope, $log, $resource){
     var jukeCtrl = this;
     // TODO add support for mulitple wallboxes
     var TrackList = $resource('/api/track/:wallbox/:letter/:number', {wallbox:1});
     var ActionList = $resource('/api/actions');
-    var SettingsList = $resource('/api/settings');
     $log.log("grabbing track list");
     $scope.tracks = TrackList.query(); //TODO add error handler
     $scope.newTrack = {}; //edit form
@@ -19,8 +40,6 @@
     $scope.currentPage = 1; // pagination
     $scope.itemsPerPage = 10; //pagination
     $scope.track_actions = ActionList.query(); //TODO add error handler
-    $scope.settings = SettingsList.query(); //TODO add error handler
-    $log.log($scope.settings);
 
     // pagination
     $scope.tracks.$promise.then(function () {

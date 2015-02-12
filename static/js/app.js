@@ -11,6 +11,7 @@
     // TODO add support for mulitple wallboxes
     var TrackList = $resource('/api/track/:wallbox/:letter/:number', {wallbox:1});
     var ActionList = $resource('/api/actions');
+    var SettingsList = $resource('/api/settings');
     $log.log("grabbing track list");
     $scope.tracks = TrackList.query(); //TODO add error handler
     $scope.newTrack = {}; //edit form
@@ -18,6 +19,8 @@
     $scope.currentPage = 1; // pagination
     $scope.itemsPerPage = 10; //pagination
     $scope.track_actions = ActionList.query(); //TODO add error handler
+    $scope.settings = SettingsList.query(); //TODO add error handler
+    $log.log($scope.settings);
 
     // pagination
     $scope.tracks.$promise.then(function () {

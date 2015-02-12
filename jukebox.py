@@ -98,7 +98,6 @@ app.add_url_rule('/api/gen/<int:wallbox>/<highest_letter>/<int:highest_number>',
         view_func=JukeboxGenTracks.as_view('jukebox_gen'))
 app.add_url_rule('/api/actions',
         view_func=JukeboxActions.as_view('jukebox_track_actions'))
-# TODO add routing for settings
 app.add_url_rule('/api/settings',
         view_func=JukeboxSettings.as_view('jukebox_settings'), methods=['GET'])
 app.add_url_rule('/api/setting/<category>',

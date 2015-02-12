@@ -24,10 +24,10 @@ CREATE TABLE IF NOT EXISTS tracks (
 SETTINGS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS settings (
   ID       INTEGER PRIMARY KEY AUTOINCREMENT,
-  section  TEXT NOT NULL,
-  option   TEXT NOT NULL,
+  category TEXT NOT NULL,
+  item     TEXT NOT NULL,
   value    TEXT NOT NULL,
-  UNIQUE(section, option)
+  UNIQUE(category, item)
 );
 """
 
@@ -152,7 +152,13 @@ class JukeboxModel:
 
         """
         rows = _cursor.execute('SELECT * FROM settings ORDER BY category, item')
-        return [dict_from_row(item) for item in rows.fetchall()]
+        categories = {}
+        for item in rows.fetchall():
+            categories[item['category']] = categories.setdefault(item['category'], []) + [dict_from_row(item),]
+        result = []
+        for (category, items) in categories.iteritems():
+            result += [{'category': category, 'items': items},]
+        return result
 
     @classmethod
     def retrieve_category(self, category):

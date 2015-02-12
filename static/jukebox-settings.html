@@ -1,3 +1,25 @@
-<div ng-show="tab.isSet(2)" ng-controller="JukeboxController as jukeboxCtrl">
-  settings go here
+<div id="settings" ng-show="tab.isSet(2)" ng-controller="JukeboxController as jukeboxCtrl">
+  <accordion close-others="True">
+    <accordion-group heading="{{category.category}}" ng-repeat="category in settings track by $index" ng-init="category_index = $index">
+      <ul>
+        <li ng-repeat="item in settings[category_index].items track by $index">
+          <label>
+          {{item.item}}
+          <input ng-model="settings[category_index].items[$index].value" name="item_{{category_index}}_$index" value="{{item.value}}">
+          </label>
+        </li>
+      </ul>
+    </accordion-group>
+  </accordion>
+
+  <ul>
+    <li ng-repeat="category in settings track by $index">
+      {{category.category}}
+      <ul>
+        <li ng-repeat="item in category.items track by $index">
+          {{item.item}} - {{item.value}}
+        </li>
+      </ul>
+    </li>
+  </ul>
 </div>

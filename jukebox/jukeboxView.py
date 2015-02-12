@@ -48,7 +48,7 @@ class JukeboxActions(flask.views.MethodView):
 
 class JukeboxSettings(flask.views.MethodView):
     def get(self):
-        return jsonify(JukeboxModel.retrieve_settings())
+        return json.dumps(JukeboxModel.retrieve_settings())
 
 class JukeboxSettingCategory(flask.views.MethodView):
     def get(self, category):
